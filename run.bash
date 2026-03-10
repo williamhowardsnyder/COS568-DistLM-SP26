@@ -1,6 +1,8 @@
 export GLUE_DIR=$HOME/COS568-DistLM-SP26/glue_data
 export TASK_NAME=RTE
 
+mkdir -p $HOME/$TASK_NAME/
+
 rank=$1
 ip_prefix=10.10.1
 master_suffix=2
