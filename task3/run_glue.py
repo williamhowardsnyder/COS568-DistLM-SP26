@@ -30,6 +30,8 @@ import torch.distributed as dist
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 from tqdm import tqdm, trange
 
 # import a previous version of the HuggingFace Transformers package
@@ -155,12 +157,6 @@ def train(args, train_dataset, model, tokenizer):
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 ##################################################
                 # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
-                if is_distributed:
-                    rank = dist.get_rank()
-                    for param in model.parameters():
-                        dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
-                        param.grad.data /= dist.get_world_size()
-
                 optimizer.step()
                 ##################################################
                 scheduler.step() # Update learning rate schedule
@@ -446,6 +442,9 @@ def main():
     # TODO(cos568): load the model using from_pretrained. Remember to pass in `config` as an argument.
     # If you pass in args.model_name_or_path (e.g. "bert-base-cased"), the model weights file will be downloaded from HuggingFace. (expect one line of code)
     model = model_class.from_pretrained(args.model_name_or_path, config=config)
+
+    if args.world_size > 1:
+        model = DDP(model)
     ##################################################
 
     if args.local_rank == 0:
