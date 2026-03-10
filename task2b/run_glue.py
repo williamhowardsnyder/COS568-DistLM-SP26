@@ -157,10 +157,9 @@ def train(args, train_dataset, model, tokenizer):
                 # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
                 if is_distributed:
                     rank = dist.get_rank()
-                    size = world.get_size()
                     for param in model.parameters():
                         dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
-                        param.grad.data /= size
+                        param.grad.data /= dist.get_world_size()
 
                 optimizer.step()
                 ##################################################
