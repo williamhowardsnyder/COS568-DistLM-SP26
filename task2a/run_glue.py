@@ -154,6 +154,7 @@ def train(args, train_dataset, model, tokenizer):
 
             tr_loss += loss.item()
             losses.append(loss.item())
+            print(loss.item())
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 ##################################################
                 # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
@@ -187,6 +188,7 @@ def train(args, train_dataset, model, tokenizer):
                 end = time.perf_counter()
                 total_time = end - start
                 batch_times.append(total_time)
+                print(total_time)
             else:
                 batch_times.append(-1)
             
