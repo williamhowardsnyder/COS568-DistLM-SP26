@@ -119,7 +119,7 @@ def train(args, train_dataset, model, tokenizer):
     model.zero_grad()
     train_iterator = trange(int(args.num_train_epochs), desc="Epoch", disable=args.local_rank not in [-1, 0])
     set_seed(args)  # Added here for reproductibility (even between python 2 and 3)
-    for _ in train_iterator:
+    for ep in train_iterator:
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
         batch_times = []
         losses = []
@@ -197,13 +197,13 @@ def train(args, train_dataset, model, tokenizer):
         # TODO(cos568): call evaluate() here to get the model performance after every epoch. (expect one line of code)
         print(losses)
         print(batch_times)
-        evaluate(args, model, tokenizer, batch_times=batch_times, losses=losses)
+        evaluate(args, model, tokenizer, batch_times=batch_times, losses=losses, epoch=ep)
         ##################################################
 
     return global_step, tr_loss / global_step
 
 
-def evaluate(args, model, tokenizer, prefix="", batch_times=None, losses=None):
+def evaluate(args, model, tokenizer, prefix="", batch_times=None, losses=None, epoch=None):
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     eval_task_names = ("mnli", "mnli-mm") if args.task_name == "mnli" else (args.task_name,)
     eval_outputs_dirs = (args.output_dir, args.output_dir + '-MM') if args.task_name == "mnli" else (args.output_dir,)
@@ -257,7 +257,10 @@ def evaluate(args, model, tokenizer, prefix="", batch_times=None, losses=None):
         result = compute_metrics(eval_task, preds, out_label_ids)
         results.update(result)
 
-        output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
+        if epoch is None:
+            output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
+        else:
+            output_eval_file = os.path.join(eval_output_dir, f"eval_results_ep={epoch}.txt")
         print(losses)
         print(batch_times)
         with open(output_eval_file, "w") as writer:
