@@ -124,8 +124,7 @@ def train(args, train_dataset, model, tokenizer):
         batch_times = []
         losses = []
         for step, batch in enumerate(epoch_iterator):
-            if step > 0:
-                start = time.perf_counter()
+            start = time.perf_counter()
             model.train()
             batch = tuple(t.to(args.device) for t in batch)
             inputs = {'input_ids':      batch[0],
@@ -135,8 +134,7 @@ def train(args, train_dataset, model, tokenizer):
             outputs = model(**inputs)
             loss = outputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
             
-            if step < 5:
-                print(f"step {step}\t loss: {loss.item()}")
+            print(f"step {step}\t loss: {loss.item()}")
             
             if args.gradient_accumulation_steps > 1:
                 loss = loss / args.gradient_accumulation_steps
@@ -154,7 +152,6 @@ def train(args, train_dataset, model, tokenizer):
 
             tr_loss += loss.item()
             losses.append(loss.item())
-            print(loss.item())
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 ##################################################
                 # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
@@ -188,7 +185,7 @@ def train(args, train_dataset, model, tokenizer):
                 end = time.perf_counter()
                 total_time = end - start
                 batch_times.append(total_time)
-                print(total_time)
+                print(f"step {step}\t time: {total_time}")
             else:
                 batch_times.append(-1)
             
@@ -198,6 +195,8 @@ def train(args, train_dataset, model, tokenizer):
         
         ##################################################
         # TODO(cos568): call evaluate() here to get the model performance after every epoch. (expect one line of code)
+        print(losses)
+        print(batch_times)
         evaluate(args, model, tokenizer, batch_times=batch_times, losses=losses)
         ##################################################
 
@@ -259,6 +258,8 @@ def evaluate(args, model, tokenizer, prefix="", batch_times=None, losses=None):
         results.update(result)
 
         output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
+        print(losses)
+        print(batch_times)
         with open(output_eval_file, "w") as writer:
             logger.info("***** Eval results {} *****".format(prefix))
             for key in sorted(result.keys()):
