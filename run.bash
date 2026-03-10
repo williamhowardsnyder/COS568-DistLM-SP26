@@ -20,6 +20,6 @@ python3 task2a/run_glue.py \
   --output_dir $HOME/$TASK_NAME/ \
   --overwrite_output_dir \
   --master_ip $ip_prefix"."$master_suffix \
-  --master_port $port \
+  --master_port $master_port \
   --world_size 4 \
   --local_rank $rank
