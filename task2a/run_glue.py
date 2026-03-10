@@ -391,6 +391,13 @@ def main():
     # set up (distributed) training
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
     args.n_gpu = torch.cuda.device_count()
+    if args.world_size > 1:
+        torch.distributed.init_process_group(
+            backend='gloo', # for cpu
+            init_method=f"tcp://{args.master_ip}:{args.master_port}", # "tcp://{master_ip}:{master_port}"
+            world_size=args.world_size, # Number of nodes (4 in our experiments)
+            rank=args.local_rank, # 0, 1, 2, 3
+        )
 
     # Setup logging
     logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -437,13 +444,6 @@ def main():
     # Training
     if args.do_train:
         # Initialize the process group for distirbuted training
-        if args.world_size > 1:
-            torch.distributed.init_process_group(
-                backend='gloo', # for cpu
-                init_method=f"tcp://{args.master_ip}:{args.master_port}", # "tcp://{master_ip}:{master_port}"
-                world_size=args.world_size, # Number of nodes (4 in our experiments)
-                rank=args.local_rank, # 0, 1, 2, 3
-            )
         train_dataset = load_and_cache_examples(args, args.task_name, tokenizer, evaluate=False)
         global_step, tr_loss = train(args, train_dataset, model, tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
