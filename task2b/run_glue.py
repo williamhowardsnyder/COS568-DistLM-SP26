@@ -155,23 +155,12 @@ def train(args, train_dataset, model, tokenizer):
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 ##################################################
                 # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
-                rank = dist.get_rank()
                 if is_distributed:
+                    rank = dist.get_rank()
+                    size = world.get_size()
                     for param in model.parameters():
-                        if rank == 0:
-                            gathered = [torch.empty_like(param) for _ in range(args.world_size)]
-                        else:
-                            gathered = None
-                        dist.gather(param.grad, gather_list=gathered)
-                        
-                        avg_grad = torch.empty_like(param.grad)
-                        if rank == 0:
-                            avg_grad = torch.stack(gathered, dim=0).mean(dim=0)
-                            scatter_list = [avg_grad.clone() for _ in range(args.world_size)]
-                        else:
-                            scatter_list = None
-                        dist.scatter(avg_grad, scatter_list=scatter_list)
-                        param.grad = avg_grad
+                        dist.all_reduce(param.grad.data, op=dist.ReduceOp.SUM)
+                        param.grad.data /= size
 
                 optimizer.step()
                 ##################################################
