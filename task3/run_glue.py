@@ -408,6 +408,8 @@ def main():
             world_size=args.world_size, # Number of nodes (4 in our experiments)
             rank=args.local_rank, # 0, 1, 2, 3
         )
+        os.environ['MASTER_ADDR'] = f'{args.master_ip}'
+        os.environ['MASTER_PORT'] = f'{args.master_port}'
 
     # Setup logging
     logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
