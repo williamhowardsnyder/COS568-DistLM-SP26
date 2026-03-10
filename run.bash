@@ -8,7 +8,7 @@ ip_prefix=10.10.1
 master_suffix=2
 master_port=29500
 
-python3 task2a/run_glue.py \
+python3 task2b/run_glue.py \
   --model_type bert \
   --model_name_or_path bert-base-cased \
   --task_name $TASK_NAME \
