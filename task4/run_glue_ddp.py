@@ -31,6 +31,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.profiler import profile
 
 from tqdm import tqdm, trange
 
