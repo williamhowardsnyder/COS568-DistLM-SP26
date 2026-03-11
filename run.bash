@@ -8,7 +8,7 @@ ip_prefix=10.10.1
 master_suffix=2
 master_port=29500
 
-python3 task4/run_glue_all_reduce.py \
+python3 task4/run_glue_ddp.py \
   --model_type bert \
   --model_name_or_path bert-base-cased \
   --task_name $TASK_NAME \
