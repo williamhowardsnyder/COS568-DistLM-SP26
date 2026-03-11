@@ -31,7 +31,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.profiler import profile
+from torch.profiler import profile, schedule
 
 from tqdm import tqdm, trange
 
@@ -127,8 +127,9 @@ def train(args, train_dataset, model, tokenizer):
         batch_times = []
         losses = []
         trace_addr = f"/users/will_hs/RTE/trace.json"
+        sched = schedule(skip_first=1, active=3)
         with profile(
-            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+            activities=[ProfilerActivity.CPU],
             schedule=sched,
             on_trace_ready=lambda p: p.export_chrome_trace(trace_addr),
         ) as prof:
@@ -167,9 +168,7 @@ def train(args, train_dataset, model, tokenizer):
                     scheduler.step() # Update learning rate schedule
                     model.zero_grad()
                     global_step += 1
-                if step == 3:
-                    # Save trace
-                    break
+                
                 if args.max_steps > 0 and global_step > args.max_steps:
                     epoch_iterator.close()
                     break
