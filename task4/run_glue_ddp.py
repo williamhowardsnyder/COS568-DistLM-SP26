@@ -125,7 +125,7 @@ def train(args, train_dataset, model, tokenizer):
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
         batch_times = []
         losses = []
-        trace_addr = f"trace.json"
+        trace_addr = f"/users/will_hs/RTE/trace.json"
         with profile(
             activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
             schedule=sched,
