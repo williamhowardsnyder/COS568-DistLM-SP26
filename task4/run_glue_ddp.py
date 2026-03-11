@@ -31,7 +31,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.profiler import profile, schedule
+from torch.profiler import profile, schedule, ProfilerActivity
 
 from tqdm import tqdm, trange
 
@@ -127,7 +127,7 @@ def train(args, train_dataset, model, tokenizer):
         batch_times = []
         losses = []
         trace_addr = f"/users/will_hs/RTE/trace.json"
-        sched = schedule(skip_first=1, active=3)
+        sched = schedule(skip_first=1, active=3, warmup=0, wait=0)
         with profile(
             activities=[ProfilerActivity.CPU],
             schedule=sched,
