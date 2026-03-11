@@ -125,7 +125,7 @@ def train(args, train_dataset, model, tokenizer):
         batch_times = []
         losses = []
         trace_addr = f"/users/will_hs/RTE/trace_gather.json"
-        sched = schedule(skip_first=0, active=3, wait=0, warmup=1)
+        sched = schedule(skip_first=0, active=3, wait=0, warmup=1, repeat=1)
         with profile(
             activities=[ProfilerActivity.CPU],
             schedule=sched,
