@@ -125,53 +125,54 @@ def train(args, train_dataset, model, tokenizer):
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
         batch_times = []
         losses = []
-        for step, batch in enumerate(epoch_iterator):
-            start = time.perf_counter()
-            model.train()
-            batch = tuple(t.to(args.device) for t in batch)
-            inputs = {'input_ids':      batch[0],
-                      'attention_mask': batch[1],
-                      'token_type_ids': batch[2] if args.model_type in ['bert', 'xlnet'] else None,  # XLM don't use segment_ids
-                      'labels':         batch[3]}
-            outputs = model(**inputs)
-            loss = outputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
-            
-            print(f"step {step}\t loss: {loss.item()}")
-            
-            if args.gradient_accumulation_steps > 1:
-                loss = loss / args.gradient_accumulation_steps
-
-            if args.fp16:
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-                torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
-            else:
-                ##################################################
-                # TODO(cos568): perform backward pass here (expect one line of code)
-                loss.backward()
-                ##################################################
-                torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-
-            tr_loss += loss.item()
-            losses.append(loss.item())
-            if (step + 1) % args.gradient_accumulation_steps == 0:
-                ##################################################
-                # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
-                optimizer.step()
-                ##################################################
-                scheduler.step() # Update learning rate schedule
-                model.zero_grad()
-                global_step += 1
-            if args.max_steps > 0 and global_step > args.max_steps:
-                epoch_iterator.close()
-                break
-            if step > 0:
-                end = time.perf_counter()
-                total_time = end - start
-                batch_times.append(total_time)
-                print(f"step {step}\t time: {total_time}")
-            else:
-                batch_times.append(-1)
+        trace_addr = f"trace.json"
+        with profile(
+            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+            schedule=sched,
+            on_trace_ready=lambda p: p.export_chrome_trace(trace_addr),
+        ) as prof:
+            for step, batch in enumerate(epoch_iterator):
+                model.train()
+                batch = tuple(t.to(args.device) for t in batch)
+                inputs = {'input_ids':      batch[0],
+                          'attention_mask': batch[1],
+                          'token_type_ids': batch[2] if args.model_type in ['bert', 'xlnet'] else None,  # XLM don't use segment_ids
+                          'labels':         batch[3]}
+                outputs = model(**inputs)
+                loss = outputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
+                
+                if args.gradient_accumulation_steps > 1:
+                    loss = loss / args.gradient_accumulation_steps
+    
+                if args.fp16:
+                    with amp.scale_loss(loss, optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                    torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
+                else:
+                    ##################################################
+                    # TODO(cos568): perform backward pass here (expect one line of code)
+                    loss.backward()
+                    ##################################################
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+    
+                tr_loss += loss.item()
+                losses.append(loss.item())
+                if (step + 1) % args.gradient_accumulation_steps == 0:
+                    ##################################################
+                    # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
+                    # optimizer.step()
+                    prof.step()
+                    ##################################################
+                    scheduler.step() # Update learning rate schedule
+                    model.zero_grad()
+                    global_step += 1
+                if step == 3:
+                    # Save trace
+                    break
+                if args.max_steps > 0 and global_step > args.max_steps:
+                    epoch_iterator.close()
+                    break
+                
             
         if args.max_steps > 0 and global_step > args.max_steps:
             train_iterator.close()
